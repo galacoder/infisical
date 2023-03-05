@@ -24,6 +24,7 @@ services:
       - mongo
     networks:
       - app_network
+    command: npm start
   frontend:
     build:
       context: ./frontend
