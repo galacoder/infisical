@@ -1,0 +1,86 @@
+services:
+  - name: infisical-nginx
+    image: nginx
+    envVars:
+      - key: TZ
+        value: UTC
+    ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+    volumes:
+      - name: nginx-config
+        path: /etc/nginx/conf.d/default.conf
+        readOnly: true
+    dependencies:
+      - name: infisical-backend
+      - name: infisical-frontend
+    healthCheck:
+      path: /
+      port: 80
+      protocol: HTTP
+      timeoutSeconds: 5
+      unhealthyThreshold: 5
+      healthyThreshold: 2
+      intervalSeconds: 10
+    envVars:
+      - key: TZ
+        value: UTC
+    privateNetworks:
+      - name: infisical
+
+  - name: infisical-backend
+    build:
+      env: .env
+    image: infisical/backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+    dependencies:
+      - name: infisical-mongo
+    privateNetworks:
+      - name: infisical
+
+  - name: infisical-frontend
+    build:
+      env: .env
+    image: infisical/frontend
+    envVars:
+      - key: INFISICAL_TELEMETRY_ENABLED
+        value: ${TELEMETRY_ENABLED}
+      - key: NEXT_PUBLIC_STRIPE_PRODUCT_PRO
+        value: ${STRIPE_PRODUCT_PRO}
+      - key: NEXT_PUBLIC_STRIPE_PRODUCT_TEAM
+        value: ${STRIPE_PRODUCT_TEAM}
+      - key: NEXT_PUBLIC_STRIPE_PRODUCT_STARTER
+        value: ${STRIPE_PRODUCT_STARTER}
+    dependencies:
+      - name: infisical-backend
+    privateNetworks:
+      - name: infisical
+
+  - name: infisical-mongo
+    image: mongo
+    envVars:
+      - key: MONGO_INITDB_ROOT_USERNAME
+        value: ${MONGO_USERNAME}
+      - key: MONGO_INITDB_ROOT_PASSWORD
+        value: ${MONGO_PASSWORD}
+    volumes:
+      - name: mongo-data
+        mountPath: /data/db
+    privateNetworks:
+      - name: infisical
+
+volumes:
+  - name: nginx-config
+    source:
+      type: bind
+      path: ./nginx/default.conf
+    readOnly: true
+  - name: mongo-data
+
+networks:
+  - name: infisical
+    includeInVPC: true
