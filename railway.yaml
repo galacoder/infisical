@@ -20,11 +20,11 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+    command: npm start
     depends_on:
       - mongo
     networks:
       - app_network
-    command: npm start
   frontend:
     build:
       context: ./frontend
